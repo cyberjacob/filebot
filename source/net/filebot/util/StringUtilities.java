@@ -31,7 +31,7 @@ public final class StringUtilities {
 		Matcher matcher = DIGIT.matcher(s);
 		while (matcher.find()) {
 			try {
-				numbers.add(new Integer(matcher.group()));
+				numbers.add(Integer.parseInt(matcher.group()));
 			} catch (NumberFormatException e) {
 				// ignore
 			}
@@ -47,12 +47,23 @@ public final class StringUtilities {
 		Matcher matcher = DIGIT.matcher(s);
 		if (matcher.find()) {
 			try {
-				return new Integer(matcher.group());
+				return Integer.parseInt(matcher.group());
 			} catch (NumberFormatException e) {
 				// ignore
 			}
 		}
 		return null;
+	}
+
+	public static String matchLastOccurrence(CharSequence s, Pattern pattern) {
+		String lastMatch = null;
+
+		Matcher matcher = pattern.matcher(s);
+		while (matcher.find()) {
+			lastMatch = matcher.group();
+		}
+
+		return lastMatch;
 	}
 
 	public static Stream<String> tokenize(CharSequence s) {

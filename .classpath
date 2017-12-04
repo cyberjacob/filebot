@@ -2,7 +2,12 @@
 <classpath>
 	<classpathentry kind="src" path="source"/>
 	<classpathentry kind="src" path="test"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER">
+		<attributes>
+			<attribute name="module" value="true"/>
+			<attribute name="limit-modules" value="java.se,javafx.base,javafx.controls,javafx.fxml,javafx.graphics,javafx.media,javafx.swing,javafx.web,jdk.accessibility,jdk.attach,jdk.compiler,jdk.httpserver,jdk.jartool,jdk.javadoc,jdk.jconsole,jdk.jdi,jdk.management,jdk.packager,jdk.plugin.dom,jdk.sctp,jdk.security.auth,jdk.security.jgss,jdk.unsupported,oracle.desktop,oracle.net,jdk.dynalink,jdk.incubator.httpclient,jdk.jfr,jdk.jshell,jdk.jsobject,jdk.management.cmm,jdk.management.jfr,jdk.management.resource,jdk.net,jdk.packager.services,jdk.scripting.nashorn,jdk.xml.dom,java.activation,jdk.xml.bind"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="lib" path="lib/ivy/bundle/args4j.jar"/>
 	<classpathentry kind="lib" path="lib/jars/jacksum.jar"/>
 	<classpathentry kind="lib" path="lib/jars/simmetrics.jar"/>
@@ -31,11 +36,13 @@
 	<classpathentry kind="lib" path="lib/ivy/jar/language-detector.jar"/>
 	<classpathentry kind="lib" path="lib/ivy/bundle/guava.jar"/>
 	<classpathentry kind="lib" path="lib/ivy/jar/streamex.jar"/>
-	<classpathentry kind="lib" path="lib/jars/AppleJavaExtensions.jar"/>
 	<classpathentry kind="lib" path="lib/ivy/jar/controlsfx.jar" sourcepath="lib/ivy/source/controlsfx.jar"/>
 	<classpathentry kind="lib" path="lib/ivy/jar/lanterna.jar" sourcepath="lib/ivy/source/lanterna.jar"/>
 	<classpathentry kind="lib" path="lib/ivy/jar/metadata-extractor.jar" sourcepath="lib/ivy/source/metadata-extractor.jar"/>
 	<classpathentry kind="lib" path="lib/ivy/jar/xmpcore.jar"/>
 	<classpathentry kind="lib" path="lib/ivy/jar/glazedlists_java16.jar"/>
+	<classpathentry kind="lib" path="lib/ivy/jar/jaxb-api.jar"/>
+	<classpathentry kind="lib" path="lib/ivy/jar/jaxb-impl.jar"/>
+	<classpathentry kind="lib" path="lib/ivy/jar/activation.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

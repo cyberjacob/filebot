@@ -1,26 +1,22 @@
 package net.filebot.platform.mac;
 
 import static ca.weblite.objc.util.CocoaUtils.*;
-import static net.filebot.Logging.*;
 
+import java.awt.Desktop;
 import java.awt.EventQueue;
 import java.awt.SecondaryLoop;
 import java.awt.Toolkit;
 import java.awt.Window;
+import java.awt.desktop.QuitStrategy;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.logging.Level;
 
 import javax.swing.JMenuBar;
 import javax.swing.UIManager;
 
-import com.apple.eawt.Application;
-import com.apple.eawt.FullScreenUtilities;
-import com.apple.eawt.QuitStrategy;
-import com.apple.eio.FileManager;
 import com.sun.jna.Pointer;
 
 import ca.weblite.objc.Client;
@@ -96,73 +92,23 @@ public class MacAppUtilities {
 		return result;
 	}
 
-	public static void setWindowCanFullScreen(Window window) {
-		try {
-			FullScreenUtilities.setWindowCanFullScreen(window, true);
-		} catch (Throwable t) {
-			debug.log(Level.WARNING, t.getMessage(), t);
-		}
-	}
-
-	public static void requestForeground() {
-		try {
-			Application.getApplication().requestForeground(true);
-		} catch (Throwable t) {
-			debug.log(Level.WARNING, t.getMessage(), t);
-		}
-	}
-
-	public static void revealInFinder(File file) {
-		try {
-			FileManager.revealInFinder(file);
-		} catch (Throwable t) {
-			debug.log(Level.WARNING, t.getMessage(), t);
-		}
-	}
-
-	public static void moveToTrash(File file) {
-		try {
-			FileManager.moveToTrash(file);
-		} catch (Throwable t) {
-			debug.log(Level.WARNING, t.getMessage(), t);
-		}
-	}
-
-	public static void setDefaultMenuBar(JMenuBar menu) {
-		try {
-			Application.getApplication().setDefaultMenuBar(menu);
-		} catch (Throwable t) {
-			debug.log(Level.WARNING, t.getMessage(), t);
-		}
-	}
-
-	public static void setQuitStrategyCloseAll() {
-		try {
-			Application.getApplication().setQuitStrategy(QuitStrategy.CLOSE_ALL_WINDOWS);
-		} catch (Throwable t) {
-			debug.log(Level.WARNING, t.getMessage(), t);
-		}
-	}
-
-	public static void setOpenFileHandler(Consumer<List<File>> handler) {
-		try {
-			Application.getApplication().setOpenFileHandler(evt -> {
-				List<File> files = evt.getFiles();
-				if (files.size() > 0) {
-					handler.accept(files);
-				}
-			});
-		} catch (Throwable t) {
-			debug.log(Level.WARNING, t.getMessage(), t);
-		}
-	}
-
-	public static void initializeApplication() {
+	public static void initializeApplication(JMenuBar appMenuBar, Consumer<List<File>> openFileHandler) {
 		// improved UI defaults
 		UIManager.put("TitledBorder.border", UIManager.getBorder("InsetBorder.aquaVariant"));
 
 		// make sure Application Quit Events get forwarded to normal Window Listeners
-		setQuitStrategyCloseAll();
+		Desktop.getDesktop().setQuitStrategy(QuitStrategy.CLOSE_ALL_WINDOWS);
+
+		// set global menu bar
+		Desktop.getDesktop().setDefaultMenuBar(appMenuBar);
+
+		// set open file handler
+		Desktop.getDesktop().setOpenFileHandler(evt -> {
+			List<File> files = evt.getFiles();
+			if (files.size() > 0) {
+				openFileHandler.accept(files);
+			}
+		});
 	}
 
 	public static boolean isLockedFolder(File folder) {

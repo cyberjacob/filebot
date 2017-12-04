@@ -25,6 +25,7 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
@@ -113,21 +114,21 @@ public final class FileUtilities {
 		destination = resolve(source, destination);
 
 		// create parent folder if necessary and make sure that the folder structure is created, and throw exception if the folder structure can't be created
-		Files.createDirectories(destination.getParentFile().toPath());
+		Path parentFolder = destination.toPath().getParent();
+		if (Files.notExists(parentFolder, LinkOption.NOFOLLOW_LINKS)) {
+			Files.createDirectories(parentFolder);
+		}
 
 		return destination;
 	}
 
 	public static File createRelativeSymlink(File link, File target, boolean relativize) throws IOException {
 		if (relativize) {
-			// make sure we're working with the full path
-			link = link.getCanonicalFile();
-			target = target.getCanonicalFile();
-
+			// make sure we're working with the correct full path of the file or link
 			try {
-				target = link.getParentFile().toPath().relativize(target.toPath()).toFile();
+				target = link.toPath().getParent().toRealPath(LinkOption.NOFOLLOW_LINKS).relativize(target.toPath()).toFile();
 			} catch (Throwable e) {
-				// unable to relativize link target
+				log.warning(cause("Unable to relativize link target", e));
 			}
 		}
 

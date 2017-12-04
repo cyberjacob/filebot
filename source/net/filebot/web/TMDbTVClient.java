@@ -98,15 +98,19 @@ public class TMDbTVClient extends AbstractEpisodeListProvider {
 		// http://api.themoviedb.org/3/tv/id
 		Object tv = tmdb.request("tv/" + series.getId(), emptyMap(), locale);
 
+		// retrieve localized series name from response
+		String name = getString(tv, "name");
+		String originalName = getString(tv, "original_name");
+
 		SeriesInfo info = new SeriesInfo(this, sortOrder, locale, series.getId());
-		info.setName(Stream.of("original_name", "name").map(key -> getString(tv, key)).filter(Objects::nonNull).findFirst().orElse(series.getName()));
-		info.setAliasNames(series.getAliasNames());
+		info.setName(name);
+		info.setAliasNames(Stream.concat(Stream.of(series.getName(), originalName), Stream.of(series.getAliasNames())).filter(Objects::nonNull).filter(s -> !s.equals(name)).distinct().toArray(String[]::new));
 		info.setStatus(getString(tv, "status"));
 		info.setLanguage(getString(tv, "original_language"));
 		info.setStartDate(getStringValue(tv, "first_air_date", SimpleDate::parse));
-		info.setRating(getStringValue(tv, "vote_average", Double::new));
-		info.setRatingCount(getStringValue(tv, "vote_count", Integer::new));
-		info.setRuntime(stream(getArray(tv, "episode_run_time")).map(Object::toString).map(Integer::new).findFirst().orElse(null));
+		info.setRating(getStringValue(tv, "vote_average", Double::parseDouble));
+		info.setRatingCount(getStringValue(tv, "vote_count", Integer::parseInt));
+		info.setRuntime(stream(getArray(tv, "episode_run_time")).map(Object::toString).map(Integer::parseInt).findFirst().orElse(null));
 		info.setGenres(streamJsonObjects(tv, "genres").map(it -> getString(it, "name")).collect(toList()));
 		info.setNetwork(streamJsonObjects(tv, "networks").map(it -> getString(it, "name")).findFirst().orElse(null));
 
@@ -128,9 +132,9 @@ public class TMDbTVClient extends AbstractEpisodeListProvider {
 				Integer absoluteNumber = episodes.size() + 1;
 
 				if (s > 0) {
-					episodes.add(new Episode(series.getName(), seasonNumber, episodeNumber, episodeTitle, absoluteNumber, null, airdate, id, info));
+					episodes.add(new Episode(name, seasonNumber, episodeNumber, episodeTitle, absoluteNumber, null, airdate, id, info));
 				} else {
-					specials.add(new Episode(series.getName(), null, null, episodeTitle, null, episodeNumber, airdate, id, info));
+					specials.add(new Episode(name, null, null, episodeTitle, null, episodeNumber, airdate, id, info));
 				}
 			});
 		}

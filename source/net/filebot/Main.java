@@ -130,7 +130,7 @@ public class Main {
 			System.exit(1);
 		} catch (Throwable e) {
 			// unexpected error => dump stack
-			debug.severe(cause("Error during startup", e));
+			debug.log(Level.SEVERE, "Error during startup", e);
 			System.exit(1);
 		}
 	}
@@ -199,10 +199,7 @@ public class Main {
 		// configure main window
 		if (isMacApp()) {
 			// Mac specific configuration
-			MacAppUtilities.initializeApplication();
-			MacAppUtilities.setWindowCanFullScreen(frame);
-			MacAppUtilities.setDefaultMenuBar(FileBotMenuBar.createHelp());
-			MacAppUtilities.setOpenFileHandler(openFiles -> SwingEventBus.getInstance().post(new FileTransferable(openFiles)));
+			MacAppUtilities.initializeApplication(FileBotMenuBar.createHelp(), files -> SwingEventBus.getInstance().post(new FileTransferable(files)));
 		} else if (isUbuntuApp()) {
 			// Ubuntu/Debian specific configuration
 			frame.setIconImages(ResourceManager.getApplicationIcons());

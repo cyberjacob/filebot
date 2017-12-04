@@ -42,6 +42,7 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 
 import net.filebot.ApplicationFolder;
 import net.filebot.Language;
@@ -639,8 +640,12 @@ public class MediaDetection {
 		if (movieNameMatches.isEmpty()) {
 			movieNameMatches = matchMovieFromStringWithoutSpacing(terms, strict);
 
-			if (movieNameMatches.isEmpty() && !terms.equals(stripReleaseInfo(terms, true))) {
-				movieNameMatches = matchMovieFromStringWithoutSpacing(stripReleaseInfo(terms, true), strict);
+			// check alternative terms if necessary and only if they're different
+			if (movieNameMatches.isEmpty()) {
+				List<String> alternativeTerms = stripReleaseInfo(terms, true);
+				if (!terms.containsAll(alternativeTerms)) {
+					movieNameMatches = matchMovieFromStringWithoutSpacing(alternativeTerms, strict);
+				}
 			}
 		}
 
@@ -694,7 +699,7 @@ public class MediaDetection {
 	}
 
 	public static SimilarityMetric getMovieMatchMetric() {
-		return new MetricAvg(new SequenceMatchSimilarity(), new NameSimilarityMetric(), new SequenceMatchSimilarity(0, true), new StringEqualsMetric() {
+		return new MetricAvg(new NameSimilarityMetric(), new StringEqualsMetric() {
 
 			@Override
 			protected String normalize(Object object) {
@@ -706,19 +711,14 @@ public class MediaDetection {
 
 			@Override
 			protected String normalize(Object object) {
-				Matcher ym = year.matcher(object.toString());
-				StringBuilder sb = new StringBuilder();
-				while (ym.find()) {
-					sb.append(ym.group()).append(' ');
-				}
-				return sb.toString().trim();
+				return streamMatches(object.toString(), year).mapToInt(Integer::parseInt).flatMap(i -> IntStream.of(i, i + 1)).mapToObj(Objects::toString).collect(joining(" "));
 			}
 
 			@Override
 			public float getSimilarity(Object o1, Object o2) {
-				return super.getSimilarity(o1, o2) * 2; // DOUBLE WEIGHT FOR YEAR MATCH
+				return super.getSimilarity(o1, o2) * 2; // extra weight for year match
 			}
-		});
+		}, new SequenceMatchSimilarity(), new SequenceMatchSimilarity(0, true));
 	}
 
 	public static Movie getLocalizedMovie(MovieIdentificationService service, Movie movie, Locale locale) throws Exception {
@@ -1119,8 +1119,8 @@ public class MediaDetection {
 				if (VIDEO_FILES.accept(f) && f.length() > ONE_MEGABYTE) {
 					try (MediaInfo mi = new MediaInfo().open(f)) {
 						Object d = Duration.ofMillis(Long.parseLong(mi.get(StreamKind.General, 0, "Duration"))).toMinutes() < 10 ? ChronoUnit.MINUTES : ChronoUnit.HOURS;
-						String v = mi.get(StreamKind.Video, 0, "Codec");
-						String a = mi.get(StreamKind.Audio, 0, "Codec");
+						String v = mi.get(StreamKind.Video, 0, "CodecID");
+						String a = mi.get(StreamKind.Audio, 0, "CodecID");
 						String w = mi.get(StreamKind.Video, 0, "Width");
 						String h = mi.get(StreamKind.Video, 0, "Height");
 						return asList(d, v, a, w, h);
@@ -1283,13 +1283,13 @@ public class MediaDetection {
 	public static List<Integer> grepImdbId(CharSequence text) {
 		// scan for imdb id patterns like tt1234567
 		Pattern imdbId = Pattern.compile("(?<!\\p{Alnum})tt(\\d{7})(?!\\p{Alnum})", Pattern.CASE_INSENSITIVE);
-		return streamMatches(text, imdbId, m -> m.group(1)).map(Integer::new).collect(toList());
+		return streamMatches(text, imdbId, m -> m.group(1)).map(Integer::parseInt).collect(toList());
 	}
 
 	public static List<Integer> grepTheTvdbId(CharSequence text) {
 		// scan for thetvdb id patterns like http://www.thetvdb.com/?tab=series&id=78874&lid=14
 		Pattern tvdbUrl = Pattern.compile("thetvdb.com[\\p{Graph}]*?[\\p{Punct}]id=(\\d+)", Pattern.CASE_INSENSITIVE);
-		return streamMatches(text, tvdbUrl, m -> m.group(1)).map(Integer::new).collect(toList());
+		return streamMatches(text, tvdbUrl, m -> m.group(1)).map(Integer::parseInt).collect(toList());
 	}
 
 	public static Movie grepMovie(File nfo, MovieIdentificationService resolver, Locale locale) throws Exception {

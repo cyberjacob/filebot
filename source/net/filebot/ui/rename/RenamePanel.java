@@ -22,7 +22,6 @@ import java.awt.datatransfer.Transferable;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -31,7 +30,6 @@ import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.function.Supplier;
 import java.util.logging.Level;
-import java.util.stream.IntStream;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -346,13 +344,15 @@ public class RenamePanel extends JComponent {
 		}));
 
 		// map 1..9 number keys to presets
-		IntStream.rangeClosed(1, 9).forEach(i -> {
-			installAction(this, WHEN_IN_FOCUSED_WINDOW, getKeyStroke(Character.forDigit(i, 10), 0), newAction("Preset " + i, evt -> {
-				try {
-					Optional<Preset> preset = persistentPresets.values().stream().skip(i - 1).findFirst();
+		for (int presetNumber = 1; presetNumber <= 9; presetNumber++) {
+			int index = presetNumber - 1;
 
-					if (preset.isPresent()) {
-						new ApplyPresetAction(preset.get()).actionPerformed(evt);
+			installAction(this, WHEN_IN_FOCUSED_WINDOW, getKeyStroke(Character.forDigit(presetNumber, 10), 0), newAction("Preset " + presetNumber, evt -> {
+				try {
+					List<Preset> presets = getPresets();
+
+					if (index < presets.size()) {
+						new ApplyPresetAction(presets.get(index)).actionPerformed(evt);
 					} else {
 						new ShowPresetsPopupAction().actionPerformed(evt);
 					}
@@ -360,7 +360,7 @@ public class RenamePanel extends JComponent {
 					debug.log(Level.WARNING, e, e::getMessage);
 				}
 			}));
-		});
+		}
 
 		// copy debug information (paths and objects)
 		installAction(this, WHEN_IN_FOCUSED_WINDOW, getKeyStroke(VK_F7, 0), newAction("Copy Debug Information", evt -> {
@@ -383,9 +383,7 @@ public class RenamePanel extends JComponent {
 	private ActionPopup createPresetsPopup() {
 		ActionPopup actionPopup = new ActionPopup("Presets", ResourceManager.getIcon("action.script"));
 
-		List<Preset> presets = new ArrayList<Preset>(persistentPresets.values());
-		presets.sort(comparing(Preset::getName, new AlphanumComparator(Locale.getDefault())));
-
+		List<Preset> presets = getPresets();
 		if (presets.size() > 0) {
 			for (Preset preset : presets) {
 				actionPopup.add(new ApplyPresetAction(preset));
@@ -548,7 +546,7 @@ public class RenamePanel extends JComponent {
 		actionPopup.addSeparator();
 
 		actionPopup.addDescription(new JLabel("Action:"));
-		for (StandardRenameAction action : EnumSet.of(StandardRenameAction.MOVE, StandardRenameAction.COPY, StandardRenameAction.KEEPLINK, StandardRenameAction.SYMLINK, StandardRenameAction.HARDLINK)) {
+		for (StandardRenameAction action : Preset.getSupportedActions()) {
 			actionPopup.add(new SetRenameAction(action));
 		}
 
@@ -633,6 +631,13 @@ public class RenamePanel extends JComponent {
 		} catch (Exception e) {
 			debug.log(Level.WARNING, e, e::toString);
 		}
+	}
+
+	private List<Preset> getPresets() {
+		// load Presets and ensure Preset order on all platforms (e.g. Windows Registry Preferences are sorted alphabetically, but the same is not guaranteed for other platforms)
+		List<Preset> presets = new ArrayList<Preset>(persistentPresets.values());
+		presets.sort(comparing(Preset::getName, new AlphanumComparator(Locale.getDefault())));
+		return presets;
 	}
 
 	private String getDebugInfo() throws Exception {

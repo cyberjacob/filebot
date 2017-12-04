@@ -123,7 +123,7 @@ public class TMDbClient implements MovieIdentificationService, ArtworkProvider {
 
 		if (extendedInfo) {
 			try {
-				Object response = request(path + "/alternative_titles", emptyMap(), Locale.ENGLISH);
+				Object response = request(path + "/alternative_titles", emptyMap(), Locale.US);
 				streamJsonObjects(response, key).map(n -> {
 					return getString(n, "title");
 				}).filter(Objects::nonNull).filter(n -> n.length() >= 2).forEach(alternativeTitles::add);
@@ -308,8 +308,8 @@ public class TMDbClient implements MovieIdentificationService, ArtworkProvider {
 		}
 
 		try {
-			String mirror = (String) Cache.getCache(getName(), CacheType.Monthly).computeIfAbsent("configuration.base_url", it -> {
-				return getString(getMap(getConfiguration(), "images"), "base_url");
+			String mirror = (String) Cache.getCache(getName(), CacheType.Monthly).computeIfAbsent("configuration.secure_base_url", it -> {
+				return getString(getMap(getConfiguration(), "images"), "secure_base_url");
 			});
 			return new URL(mirror + "original" + path);
 		} catch (Exception e) {
@@ -383,16 +383,27 @@ public class TMDbClient implements MovieIdentificationService, ArtworkProvider {
 	}
 
 	protected String getLanguageCode(Locale locale) {
-		// require 2-letter language code
 		String language = locale.getLanguage();
-		if (language.length() == 2) {
-			if (locale.getCountry().length() == 2) {
-				return locale.getLanguage() + '-' + locale.getCountry(); // e.g. es-MX
-			}
-			return locale.getLanguage(); // e.g. en
+
+		// Note: ISO 639 is not a stable standard— some languages' codes have changed.
+		// Locale's constructor recognizes both the new and the old codes for the languages whose codes have changed,
+		// but this function always returns the old code.
+		switch (language) {
+		case "iw":
+			return "he-IL"; // Hebrew
+		case "in":
+			return "id-ID"; // Indonesian
+		case "":
+			return null; // empty language code
 		}
 
-		return null;
+		// require 2-letter language code
+		String country = locale.getCountry();
+		if (country.length() > 0) {
+			return language + '-' + country; // e.g. es-MX
+		}
+
+		return language;
 	}
 
 }
